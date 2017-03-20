@@ -5,6 +5,7 @@ module DataUtils
 
 using DataTables
 import DataFrames
+import DataArrays
 
 
 import Base.convert
