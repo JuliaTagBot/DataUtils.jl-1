@@ -15,7 +15,7 @@ end
 
 # this is for fixing slowness due to bad dispatching
 # performance is better, but it's still slow
-function _dispatchConstrainFunc!(f::Function, mask::Vector{Bool},
+function _dispatchConstrainFunc!(f::Function, mask::Union{Vector{Bool},BitArray},
                                  keep::BitArray, cols::NullableVector...)
     ncols = length(cols)
     # for some reason this completely fixes the performance issues
@@ -64,7 +64,7 @@ constrain(df::AbstractDataTable; kwargs...) = constrain(df, Dict(kwargs))
 
 function constrain(df::AbstractDataTable, cols::Vector{Symbol}, f::Function)
     keep = BitArray(size(df, 1))
-    _dispatchConstrainFunc!(f, complete_cases(df[cols]), keep, (df[col] for col ∈ cols)...)
+    _dispatchConstrainFunc!(f, completecases(df[cols]), keep, (df[col] for col ∈ cols)...)
     df[keep, :]
 end
 export constrain

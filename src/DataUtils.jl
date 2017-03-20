@@ -7,6 +7,7 @@ using Reexport
 @reexport using DataTables
 import DataFrames
 import DataArrays
+import Feather
 
 
 import Base.convert
