@@ -2,8 +2,9 @@ __precompile__(true)
 
 module DataUtils
 
+using Reexport
 
-using DataTables
+@reexport using DataTables
 import DataFrames
 import DataArrays
 
