@@ -7,15 +7,18 @@ TODO for now there is no special handing of nulls
 
 """
     tokenmap(A[, tokentype=Int64, sort_values=true])
+    tokenmap(data, col[, tokentype=Int64; sort_values=true])
 
 Tokenizes elements in the `Vector` or `NullableVector` `A` by creating a map between distinct
 elements of `A` and tokens of type `tokentype`.  The mapping will be returned in the form
 of a `Dict`.  If `sort_values`, the distinct values of `A` will be sorted before 
 tokenization (so that the map is order-preserving).
 
+This can also be called on a column of a dataframe.
+
 **TODO:** Note that currently this doesn't do anything special to handle nulls.
 """
-function tokenmap{T,K}(A::Union{Vector{T},NullableVector{T}}, ::Type{K}=Int64;
+function tokenmap{T,K}(A::Vector{T}, ::Type{K}=Int64;
                        sort_values::Bool=false)
     u = unique(A)
     sort_values && sort!(u)
@@ -27,7 +30,31 @@ function tokenmap{T,K}(A::Union{Vector{T},NullableVector{T}}, ::Type{K}=Int64;
     end
     mapping
 end
+
+function tokenmap{T,K}(A::NullableVector{T}, ::Type{K}=Int64;
+                       sort_values::Bool=false)
+    A = convert(Vector{Nullable{T}}, A)
+    tokenmap(A, K, sort_values=sort_values)
+end
+
+function tokenmap{K}(data::DataTable, col::Symbol, ::Type{K}=Int64;
+                     sort_values::Bool=false)
+    tokenmap(data[col], K, sort_values=sort_values)
+end
 export tokenmap
+
+
+"""
+    tokenmaps(data, cols[, tokentype=Int64, sort_values=false])
+
+Creates a token map for each column of the `DataTable` `data` in `cols`, and returns
+them in a `Dict`  of the form `col=>tokenmap` (see documentation for `tokenmap`).
+"""
+function tokenmaps{K}(data::DataTable, cols::Vector{Symbol}, ::Type{K}=Int64;
+                      sort_values::Bool=false)
+    Dict(col=>tokenmap(data, col, K, sort_values=sort_values) for col ∈ cols)
+end
+export tokenmaps
 
 
 """
@@ -38,7 +65,11 @@ Returns a vector which is the result of applying the map returned by `tokenmap` 
 documentation for that function) to elements of `A`.  This mapping can either be passed
 explicitly as `mapping` or it can be generated if it is not passed.
 """
-function tokenize{T,K}(A::Union{Vector{T},NullableVector{T}}, mapping::Dict{T,K})
+function tokenize{T,K}(A::Vector{T}, mapping::Dict{T,K})
+    K[mapping[a] for a ∈ A]
+end
+
+function tokenize{T,K}(A::NullableVector{T}, mapping::Dict{Nullable{T},K})
     K[mapping[a] for a ∈ A]
 end
 
@@ -68,4 +99,6 @@ function detokenize{T,K}(A::Union{Vector{T},NullableVector{T}}, mapping::Dict{K,
     T[inv_mapping[a] for a ∈ A] 
 end
 export detokenize
+
+
 
