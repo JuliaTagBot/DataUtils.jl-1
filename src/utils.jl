@@ -128,8 +128,8 @@ Performs the outer product of two tensors A_{i₁…iₙ}B_{j₁…jₙ}.
 
 **TODO** Currently only implemented for A and B as vectors.
 """
-function outer(A::Vector, B::Vector)
-    C = Matrix(length(A), length(B))
+function outer{T}(A::Vector{T}, B::Vector{T})
+    C = Matrix{T}(length(A), length(B))
     for j ∈ 1:size(C, 2), i ∈ 1:size(C, 1)
         C[i, j] = A[i]*B[j]
     end
@@ -138,7 +138,7 @@ end
 
 # there's no way around iterating over every element if A and B are dense
 function outer{T<:AbstractSparseArray}(::Type{T}, A::Vector, B::Vector)
-    C = spzeros(length(A), length(B))
+    C = spzeros(length(A), length(B))  # type?
     for j ∈ 1:size(C, 2), i ∈ 1:size(C, 1)
         C[i, j] = A[i]*B[j] # note that Julia keeps this element sparse if prod is 0.0
     end
@@ -371,4 +371,12 @@ function subMatricesByClass{T}(X::Matrix{T}, ncol::Integer)
     Xdict
 end
 export subMatricesByClass
+
+
+"""
+    invert(dict)
+
+Inverts a dictionary or other `Associative`.  Output is always `Dict`.
+"""
+invert(dict::Associative) = Dict(v=>k for (k,v) ∈ dict)
 

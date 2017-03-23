@@ -32,71 +32,6 @@ export shuffle!
 
 
 """
-    numericalCategories(otype, A)
-
-Converts a categorical variable into numerical values of the given type.
-
-Returns the mapping as well as the new array, but the mapping is just an array
-so it always maps to an integer
-"""
-function numericalCategories{T}(::Type{T}, A::Array)
-    mapping = sort!(unique(A))
-    o = convert(Array{T}, indexin(A, mapping))
-    return o, mapping
-end
-# define for NullableArray type
-numericalCategories{T}(::Type{T}, A::NullableArray) = numericalCategories(T, 
-        convert(Array, A))
-export numericalCategories
-
-
-"""
-    getDefaultCategoricalMapping(A::Array)
-
-Gets the default mapping of categorical variables which would be returned by
-numericalCategories.
-"""
-function getDefaultCategoricalMapping(A::Array)
-    return sort!(unique(A))
-end
-export getDefaultCategoricalMapping
-
-
-"""
-    numericalCategories!(otype::DataType, df::DataTable, col::Symbol)
-
-Converts a categorical value in a column into a numerical variable of the given
-type.
-
-Returns the mapping.
-"""
-function numericalCategories!{T}(::Type{T}, df::DataTable, col::Symbol)
-    df[Symbol(string(col)*"_Orig")] = df[col]
-    df[col], mapping = numericalCategories(T, df[col])
-    return mapping
-end
-export numericalCategories!
-
-
-"""
-    numericalCategories!(otype::DataType, df::DataTable, cols::Array{Symbol}) 
-
-Converts categorical variables into numerical values for multiple columns in a
-dataframe.  
-
-**TODO** For now doesn't return mapping, may have to implement some type of 
-mapping type.
-"""
-function numericalCategories!{T}(::Type{T}, df::DataTable, cols::Array{Symbol})
-    for col in cols
-        numericalCategories!(T, df, col)
-    end
-    return
-end
-export numericalCategories!
-
-
-"""
     convertNulls!{T}(A::Array{T, 1}, newvalue::T)
 
 Converts all null values (NaN's and Nullable()) to a particular value.
@@ -157,7 +92,7 @@ export convertNulls!
 
 The default copy method for dataframes only copies one level deep, so basically it stores
 an array of columns.  If you assign elements of individual (column) arrays then, it can
-make changes to references to those arrays that exist elsewhere.
+make changes to references of those arrays that exist elsewhere.
 
 This method instead creates a new dataframe out of copies of the (column) arrays.
 
