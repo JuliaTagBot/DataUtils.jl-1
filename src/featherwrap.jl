@@ -1,4 +1,24 @@
 
+# TODO temporary fix, delete later
+function _nullStringsFix!{T<:AbstractString}(v::NullableVector{T})
+    for i ∈ 1:length(v)
+        if v.isnull[i]
+            v[i] = ""
+        end
+    end
+end
+
+
+# TODO this  is a temporary fix for a bug in Feather
+function _nullStringsFix!(data::DataTable)
+    for (name, dtype) ∈ zip(names(data), eltype.(eltypes(data)))
+        if dtype <: AbstractString
+            _nullStringsFix!(data[name])
+        end
+    end
+end
+
+
 # TODO: this will be changed once Feather.jl gets updated
 """
     featherWrite(filename, df[, overwrite=false])
@@ -23,6 +43,8 @@ end
 
 function featherWrite(filename::AbstractString, dt::DataTable;
                       overwrite::Bool=false)::Void
+    dt = copyColumns(dt)
+    _nullStringsFix!(dt)  # TODO this is for fixing a bug in Feather, remove when fixed
     featherWrite(filename, convert(DataFrames.DataFrame, dt), overwrite=overwrite)
 end
 export featherWrite
