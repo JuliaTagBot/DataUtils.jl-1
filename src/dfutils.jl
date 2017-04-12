@@ -20,7 +20,7 @@ export convert
 
 Shuffles a dataframe in place.
 """
-function shuffle!(df::DataTable)
+function Base.shuffle!(df::DataTable)
     permutation = shuffle(collect(1:size(df)[1]))
     tdf = copyColumns(df)
     for i in 1:length(permutation)
@@ -366,3 +366,38 @@ end
 export convert
 
 
+
+#=========================================================================================
+Convert an array of Julia objects to a datatable
+=========================================================================================#
+"""
+    struct_to_table(s)
+    struct_to_table(v)
+
+Converts a Julia compound type s into a single row of a `DataTable` with column names
+equal to field names and row values equal to field values.
+
+Alternatively, once could pass a vector of compound type instances to create a `DataTable`
+with each row corresponding to an instance of the type.
+"""
+function struct_to_table{T}(t::T)
+    fnames = fieldnames(T)
+    dat = Vector{Any}(length(fnames))
+    for i ∈ 1:length(fnames)
+        dat[i] = [getfield(t, fnames[i])]
+    end
+    DataTable(dat, fnames)
+end
+
+function struct_to_table{T}(v::AbstractVector{T})
+    fnames = fieldnames(T)
+    dtypes = (fieldtype(T, n) for n ∈ fnames)
+    dat = Any[Vector{dtype}(length(v)) for dtype ∈ dtypes]
+
+    for i ∈ 1:length(v), j ∈ 1:length(fnames)
+        dat[j][i] = getfield(v[i], fnames[j])
+    end
+
+    DataTable(dat, fnames)
+end
+export struct_to_table
