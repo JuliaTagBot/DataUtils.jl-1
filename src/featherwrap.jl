@@ -33,7 +33,7 @@ function featherWrite(filename::AbstractString, df::DataFrames.DataFrame;
                       overwrite::Bool=false)::Void
     if isfile(filename)
         if !overwrite
-            throw(SystemError("File already exists.  Use overwrite=true."))
+            error("File already exists.  Use overwrite=true.")
         end
         rm(filename)     
     end
