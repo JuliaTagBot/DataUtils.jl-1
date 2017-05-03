@@ -7,9 +7,9 @@ This converts a column of floats that should have been ints, but got converted t
 floats because it has missing values which were converted to NaN's.
 The supplied `NullableArray` should have eltype `Float32` or `Float64`.
 """
-function convert{T<:Integer,N,K<:AbstractFloat}(::Type{NullableArray{T,N}}, 
+function convert{T<:Integer,N,K<:AbstractFloat}(::Type{NullableArray{T,N}},
                                                 a::NullableArray{K})
-    NullableArray([isnan(x) ? Nullable() : convert(dtype, x) for x in a])    
+    NullableArray([isnan(x) ? Nullable() : convert(dtype, x) for x in a])
 end
 export convert
 
@@ -99,7 +99,7 @@ This method instead creates a new dataframe out of copies of the (column) arrays
 This is not named copy due to the fact that there is already an explicit copy(::DataTable)
 implementation in dataframes.
 
-Note that deepcopy is recursive, so this is *NOT* the same thing as deepcopy(df), which 
+Note that deepcopy is recursive, so this is *NOT* the same thing as deepcopy(df), which
 copies literally everything.
 """
 function copyColumns(df::DataTable)
@@ -115,14 +115,14 @@ export copyColumns
 """
     applyCatConstraints(dict, df[, kwargs])
 
-Returns a copy of the dataframe `df` with categorical constraints applied.  `dict` should 
+Returns a copy of the dataframe `df` with categorical constraints applied.  `dict` should
 be a dictionary with keys equal to column names in `df` and values equal to the categorical
 values that column is allowed to take on.  For example, to select gauge bosons we can
 pass `Dict(:PID=>[i for i in 21:24; -24])`.  Alternatively, the values in the dictionary
 can be functions which return boolean values, in which case the returned dataframe will
 be the one with column values for which the functions return true.
 
-Note that this requires that the dictionary values are either `Vector` or `Function` 
+Note that this requires that the dictionary values are either `Vector` or `Function`
 (though one can of course mix the two types).
 
 Alternatively, instead of passing a `Dict` one can pass keywords, for example
@@ -178,6 +178,10 @@ end
 export randomData
 
 
+nans2nulls!(X::NullableArray) = (X[find(isnan(X))] .= Nullable(); X)
+nans2nulls!(data::DataTable, col::Symbol) = nans2nulls!(data[col])
+
+
 """
     nans2nulls(col)
     nans2nulls(df, colname)
@@ -185,26 +189,11 @@ export randomData
 Converts all `NaN`s appearing in the column to `Nullable()`.  The return
 type is `NullableArray`, even if the original type of the column is not.
 """
-function nans2nulls{T}(col::NullableArray{T})::NullableArray
-    # this is being done without lift because of bugs in NullableArrays
-    # haven't checked whether this bug still exists
-    # map(x -> (isnan(x) ? Nullable{T}() : x), col, lift=true)
-    map(col) do x
-        if !isnull(x) && isnan(get(x))
-            return Nullable{T}()
-        end
-        return x
-    end
-end
+nans2nulls(col::NullableArray) = nans2nulls!(copy(col))
 
-function nans2nulls(col::Vector)::NullableArray
-    col = convert(NullableArray, col)
-    nans2nulls(col)
-end
+nans2nulls(col::AbstractVector) = nans2nulls!(convert(NullableArray, col))
 
-function nans2nulls(df::DataTable, col::Symbol)::NullableArray
-    nans2nulls(df[col])
-end
+nans2nulls(df::DataTable, col::Symbol) = nans2nulls(df[col])
 export nans2nulls
 
 
@@ -251,7 +240,7 @@ export getCategoryVector
 """
     getUnwrappedColumnElTypes(df[, cols=[]])
 
-Get the element types of columns in a dataframe.  If the element types are `Nullable`, 
+Get the element types of columns in a dataframe.  If the element types are `Nullable`,
 instead give the `eltype` of the `Nullable`.  If `cols=[]` this will be done for
 all columns in the dataframe.
 """
