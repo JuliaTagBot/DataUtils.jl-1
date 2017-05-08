@@ -2,6 +2,8 @@
 This is a set of functions for consistently tokenizing categorical values.
 
 TODO for now there is no special handing of nulls
+
+Obviously I'm no longer going to use these at some point...
 ======================================================================================#
 
 

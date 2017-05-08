@@ -2,13 +2,11 @@ __precompile__(true)
 
 module DataUtils
 
-using Reexport
-
-@reexport using DataTables
+# using Requires
+using DataTables
+import Feather
 import DataFrames
 import DataArrays
-import Feather
-
 
 import Base.convert
 import Base.serialize
@@ -17,12 +15,14 @@ import Base.Dict
 
 
 include("utils.jl")
-include("dfutils.jl")
 include("tsutils.jl")
+
+include("dfutils.jl")
 include("dffilters.jl")
-include("featherwrap.jl")
 include("tokenize.jl")
 
+include("dataframes_compat.jl")
+include("featherwrap.jl")
 
 
-end
+end # module DataUtils

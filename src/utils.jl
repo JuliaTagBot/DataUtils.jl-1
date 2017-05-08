@@ -4,7 +4,6 @@
 `DataUtils` provides the following new constructors for `Dict`:
 
     Dict(keys, values)
-    Dict(df, keycol, valcol)
 
 One can provide `Dict` with (equal length) vector arguments.  The first
 vector provides a list of keys, while the second provides a list of values.
@@ -12,7 +11,7 @@ If the vectors are `NullableVector`, only key, value pairs with *both* their
 elements non-null will be added.
 """
 function Dict{K, V}(keys::Vector{K}, values::Vector{V})::Dict
-    @assert length(keys) == length(values) ("Vectors for constructing 
+    @assert length(keys) == length(values) ("Vectors for constructing
                                              Dict must be of equal length.")
     Dict(k=>v for (k, v) ∈ zip(keys, values))
 end
@@ -31,12 +30,6 @@ function Dict{K, V}(keys::NullableVector{K}, values::NullableVector{V})::Dict
     end
     return dict
 end
-
-function Dict(df::DataTable, keycol::Symbol, valcol::Symbol)::Dict
-    Dict(df[keycol], df[valcol])
-end
-export Dict
-
 
 
 """
@@ -60,7 +53,7 @@ export serialize
     deserialize(filename::AbstractString)
 
 Opens a file from the local file system and deserializes what it finds there.
-This is quite similar to the functionality in `Base` except that the default 
+This is quite similar to the functionality in `Base` except that the default
 `deserialize` method requires an `IOStream` object instead of a file name so this
 eliminates an extra line of code.
 """
@@ -78,16 +71,16 @@ export deserialize
 
 Very annoyingly Gadfly does not yet support normed histograms.
 
-This function returns an ordered pair of vectors which can be 
+This function returns an ordered pair of vectors which can be
 fed to gadfly to create a normed histogram.  If the output
 is `m, w` one can do
 `plot(x=m, y=w, Geom.bar)` to create a histogram.
 """
-function getNormedHistogramData{T <: Real}(X::Vector{T}; 
+function getNormedHistogramData{T <: Real}(X::Vector{T};
                                            nbins::Integer=StatsBase.sturges(length(X)))
     h = fit(Histogram, X, nbins=nbins)
     edges = h.edges[1]
-    midpoints = Vector{Float64}(length(edges)-1) 
+    midpoints = Vector{Float64}(length(edges)-1)
     for i in 1:length(midpoints)
         midpoints[i] = (edges[i+1] + edges[i])/2.0
     end
@@ -222,7 +215,7 @@ the input array to be sorted in the column in which boundaries are determined.
 Do `sort_array=false` in cases where the input array is already sorted
 
 This algorithm only works properly if the input array is already sorted.  By default,
-this function checks if the input array is sorted.  To skip this check, set 
+this function checks if the input array is sorted.  To skip this check, set
 `check_sort=false`.
 """
 function findBoundaries{T}(X::Vector{T}; check_sort::Bool=true,
@@ -246,7 +239,7 @@ end
 """
     findboundaries!(v[; comparator=DEFAULT])
 
-This is the same as `findboundaries` except that it sorts the vector `v` first. 
+This is the same as `findboundaries` except that it sorts the vector `v` first.
 See documentation for `findboundaries`.
 """
 function findBoundaries!{T}(X::Vector{T}; comparator=getDefaultComparator(T))
@@ -300,7 +293,7 @@ end
     findBoundaryDict(X[, ncol; check_sort=true, comparator=DEFAULT])
 
 For a sorted array `X`, find the boundaries between distinct values of column number
-`ncol`.  
+`ncol`.
 """
 function findBoundaryDict{T}(X::Vector{T}; check_sort::Bool=true,
                              comparator=getDefaultComparator(T))
@@ -336,8 +329,8 @@ _get_y_interval(y::Matrix, r::UnitRange) = y[r, :]
 """
     subMatricesByClass(X[, y], ncol)
 
-Breaks the arrays `X` and `y` (optional) into dictionaries of `class=>submatrix` 
-pairs where `class` is one of the distinct values of the column `ncol` of `X` and 
+Breaks the arrays `X` and `y` (optional) into dictionaries of `class=>submatrix`
+pairs where `class` is one of the distinct values of the column `ncol` of `X` and
 `submatrix` is the range of rows of `X` or `y` where `X[:,ncol]` has the value `class`.
 
 This function is intended for breaking up training and test sets to be used with sets of

@@ -390,3 +390,16 @@ function struct_to_table{T}(v::AbstractVector{T})
     DataTable(dat, fnames)
 end
 export struct_to_table
+
+
+"""
+    Dict(df, keycol, valcol)
+
+Create a dictionary out of the specified columns of a dataframe.
+"""
+function Dict(df::DataTable, keycol::Symbol, valcol::Symbol)::Dict
+    Dict(df[keycol], df[valcol])
+end
+export Dict
+
+
