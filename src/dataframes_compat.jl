@@ -18,6 +18,10 @@ function convertArray{T,N}(::Type{NullableArray}, v::DataArrays.DataArray{T,N})
     NullableArray{T,N}(copy(v.data), BitArray(v.na))
 end
 
+convertArray(::Type{DataArrays.DataArray}, v::Array) = DataArrays.DataArray(v)
+
+convertArray(::Type{NullableArray}, v::Array) = NullableArray(v)
+
 # TODO this will no longer be needed once Feather is updated
 convertArray(::Type{NullableArray}, v::NullableArray) = copy(v)
 export convertArray
