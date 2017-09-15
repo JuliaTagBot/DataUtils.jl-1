@@ -13,7 +13,7 @@ Obviously I'm no longer going to use these at some point...
 
 Tokenizes elements in the `Vector` or `NullableVector` `A` by creating a map between distinct
 elements of `A` and tokens of type `tokentype`.  The mapping will be returned in the form
-of a `Dict`.  If `sort_values`, the distinct values of `A` will be sorted before 
+of a `Dict`.  If `sort_values`, the distinct values of `A` will be sorted before
 tokenization (so that the map is order-preserving).
 
 This can also be called on a column of a dataframe.
@@ -39,7 +39,7 @@ function tokenmap{T,K}(A::NullableVector{T}, ::Type{K}=Int64;
     tokenmap(A, K, sort_values=sort_values)
 end
 
-function tokenmap{K}(data::DataTable, col::Symbol, ::Type{K}=Int64;
+function tokenmap{K}(data::DataFrame, col::Symbol, ::Type{K}=Int64;
                      sort_values::Bool=false)
     tokenmap(data[col], K, sort_values=sort_values)
 end
@@ -49,10 +49,10 @@ export tokenmap
 """
     tokenmaps(data, cols[, tokentype=Int64, sort_values=false])
 
-Creates a token map for each column of the `DataTable` `data` in `cols`, and returns
+Creates a token map for each column of the `DataFrame` `data` in `cols`, and returns
 them in a `Dict`  of the form `col=>tokenmap` (see documentation for `tokenmap`).
 """
-function tokenmaps{K}(data::DataTable, cols::Vector{Symbol}, ::Type{K}=Int64;
+function tokenmaps{K}(data::DataFrame, cols::Vector{Symbol}, ::Type{K}=Int64;
                       sort_values::Bool=false)
     Dict(col=>tokenmap(data, col, K, sort_values=sort_values) for col ∈ cols)
 end
@@ -63,7 +63,7 @@ export tokenmaps
     tokenize(A, mapping)
     tokenize(A[, tokentype=Int64, sort_values=true])
 
-Returns a vector which is the result of applying the map returned by `tokenmap` (see 
+Returns a vector which is the result of applying the map returned by `tokenmap` (see
 documentation for that function) to elements of `A`.  This mapping can either be passed
 explicitly as `mapping` or it can be generated if it is not passed.
 """
@@ -88,7 +88,7 @@ export tokenize
     detokenize(A, mapping[; is_inverse=false])
 
 Inverts the tokenization of `A` (see `tokenmap` and `tokenize`).  The mapping provided is
-assumed to be the forward mapping (from original objects to tokens) unless `is_inverse` in 
+assumed to be the forward mapping (from original objects to tokens) unless `is_inverse` in
 which case it is assumed to be the inverse mapping (i.e. from tokens to original objects).
 """
 function detokenize{T,K}(A::Union{Vector{T},NullableVector{T}}, mapping::Dict{K,T};
@@ -98,7 +98,7 @@ function detokenize{T,K}(A::Union{Vector{T},NullableVector{T}}, mapping::Dict{K,
     else
         inv_mapping = mapping
     end
-    T[inv_mapping[a] for a ∈ A] 
+    T[inv_mapping[a] for a ∈ A]
 end
 export detokenize
 

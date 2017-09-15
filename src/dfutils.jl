@@ -16,11 +16,11 @@ export convert
 
 
 """
-    shuffle!(df::DataTable)
+    shuffle!(df::DataFrame)
 
 Shuffles a dataframe in place.
 """
-function Base.shuffle!(df::DataTable)
+function Base.shuffle!(df::DataFrame)
     permutation = shuffle(collect(1:size(df)[1]))
     tdf = copyColumns(df)
     for i in 1:length(permutation)
@@ -71,24 +71,24 @@ export convertNulls
 
 
 """
-    convertNulls!(df::DataTable, cols::Vector{Symbol}, newvalue::Any)
+    convertNulls!(df::DataFrame, cols::Vector{Symbol}, newvalue::Any)
 
-Convert all null values in columns of a DataTable to a particular value.
+Convert all null values in columns of a DataFrame to a particular value.
 
 There is also a method for passing a single column symbol, not as a vector.
 """
-function convertNulls!(df::DataTable, cols::Vector{Symbol}, newvalue::Any)
+function convertNulls!(df::DataFrame, cols::Vector{Symbol}, newvalue::Any)
     for col in cols
         df[col] = convertNulls(df[col], newvalue)
     end
     return
 end
-convertNulls!(df::DataTable, col::Symbol, newvalue) = convertNulls!(df, [col], newvalue)
+convertNulls!(df::DataFrame, col::Symbol, newvalue) = convertNulls!(df, [col], newvalue)
 export convertNulls!
 
 
 """
-    copyColumns(df::DataTable)
+    copyColumns(df::DataFrame)
 
 The default copy method for dataframes only copies one level deep, so basically it stores
 an array of columns.  If you assign elements of individual (column) arrays then, it can
@@ -96,14 +96,14 @@ make changes to references of those arrays that exist elsewhere.
 
 This method instead creates a new dataframe out of copies of the (column) arrays.
 
-This is not named copy due to the fact that there is already an explicit copy(::DataTable)
+This is not named copy due to the fact that there is already an explicit copy(::DataFrame)
 implementation in dataframes.
 
 Note that deepcopy is recursive, so this is *NOT* the same thing as deepcopy(df), which
 copies literally everything.
 """
-function copyColumns(df::DataTable)
-    ndf = DataTable()
+function copyColumns(df::DataFrame)
+    ndf = DataFrame()
     for col in names(df)
         ndf[col] = copy(df[col])
     end
@@ -128,7 +128,7 @@ Note that this requires that the dictionary values are either `Vector` or `Funct
 Alternatively, instead of passing a `Dict` one can pass keywords, for example
 `applyCatConstraints(df, PID=[i for i in 21:24; -24])`.
 """
-function applyCatConstraints(dict::Dict, df::DataTable)
+function applyCatConstraints(dict::Dict, df::DataFrame)
     constr = Bool[true for i in 1:size(df)[1]]
     for (col, values) in dict
         constr &= if typeof(values) <: Vector
@@ -142,7 +142,7 @@ function applyCatConstraints(dict::Dict, df::DataTable)
     return df[constr, :]
 end
 
-function applyCatConstraints(df::DataTable; kwargs...)
+function applyCatConstraints(df::DataFrame; kwargs...)
     dct = Dict(kwargs)
     applyCatConstraints(dct, df)
 end
@@ -156,8 +156,8 @@ Creates a random dataframe with columns of types specified by `dtypes`.  This is
 for testing various dataframe related functionality.
 """
 function randomData(dtypes::DataType...; nrows::Integer=10^4,
-                      names::Vector{Symbol}=Symbol[])::DataTable
-    df = DataTable()
+                      names::Vector{Symbol}=Symbol[])::DataFrame
+    df = DataFrame()
     for (idx, dtype) in enumerate(dtypes)
         col = Symbol(string("col_", idx))
         if dtype <: Real
@@ -179,7 +179,7 @@ export randomData
 
 
 nans2nulls!(X::NullableArray) = (X[find(isnan(X))] .= Nullable(); X)
-nans2nulls!(data::DataTable, col::Symbol) = nans2nulls!(data[col])
+nans2nulls!(data::DataFrame, col::Symbol) = nans2nulls!(data[col])
 
 
 """
@@ -193,7 +193,7 @@ nans2nulls(col::NullableArray) = nans2nulls!(copy(col))
 
 nans2nulls(col::AbstractVector) = nans2nulls!(convert(NullableArray, col))
 
-nans2nulls(df::DataTable, col::Symbol) = nans2nulls(df[col])
+nans2nulls(df::DataFrame, col::Symbol) = nans2nulls(df[col])
 export nans2nulls
 
 
@@ -227,11 +227,11 @@ function getCategoryVector{T, U}(A::NullableVector{T}, val::T, ::Type{U}=Int64)
     getCategoryVector(A, [val], U)
 end
 
-function getCategoryVector{U}(df::AbstractDataTable, col::Symbol, vals::Vector, ::Type{U}=Int64)
+function getCategoryVector{U}(df::AbstractDataFrame, col::Symbol, vals::Vector, ::Type{U}=Int64)
     getCategoryVector(df[col], vals, U)
 end
 
-function getCategoryVector{U}(df::AbstractDataTable, col::Symbol, val, ::Type{U}=Int64)
+function getCategoryVector{U}(df::AbstractDataFrame, col::Symbol, val, ::Type{U}=Int64)
     getCategoryVector(df[col], [val], U)
 end
 export getCategoryVector
@@ -244,7 +244,7 @@ Get the element types of columns in a dataframe.  If the element types are `Null
 instead give the `eltype` of the `Nullable`.  If `cols=[]` this will be done for
 all columns in the dataframe.
 """
-function getUnwrappedColumnElTypes(df::DataTable, cols::Vector{Symbol}=Symbol[])
+function getUnwrappedColumnElTypes(df::DataFrame, cols::Vector{Symbol}=Symbol[])
     if length(cols) == 0
         cols = names(df)
     end
@@ -258,12 +258,12 @@ export getUnwrappedColumnElTypes
 
 Gets a dictionary the keys of which are the keys of a groupby of `df` by the columns
 `keycols` and the values of which are the matrices produced by taking `sdf[datacols]`
-of each `SubDataTable` `sdf` in the groupby.  Note that the keys are always tuples
+of each `SubDataFrame` `sdf` in the groupby.  Note that the keys are always tuples
 even if `keycols` only has one element.
 
 If a type `T` is provided, the output matrices will be of type `Matrix{T}`.
 """
-function getMatrixDict(df::DataTable, keycols::Vector{Symbol}, datacols::Vector{Symbol})
+function getMatrixDict(df::DataFrame, keycols::Vector{Symbol}, datacols::Vector{Symbol})
     keycoltypes = getUnwrappedColumnElTypes(df, keycols)
     dict = Dict{Tuple{keycoltypes...},Matrix}()
     for sdf ∈ groupby(df, keycols)
@@ -273,7 +273,7 @@ function getMatrixDict(df::DataTable, keycols::Vector{Symbol}, datacols::Vector{
     dict
 end
 
-function getMatrixDict{T}(::Type{T}, gdf::GroupedDataTable, keycols::Vector{Symbol},
+function getMatrixDict{T}(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symbol},
                           datacols::Vector{Symbol})
     keycoltypes = getUnwrappedColumnElTypes(gdf.parent, keycols)
     dict = Dict{Tuple{keycoltypes...},Matrix{T}}()
@@ -284,7 +284,7 @@ function getMatrixDict{T}(::Type{T}, gdf::GroupedDataTable, keycols::Vector{Symb
     dict
 end
 
-function getMatrixDict{T}(::Type{T}, gdf::GroupedDataTable, keycols::Vector{Symbol},
+function getMatrixDict{T}(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symbol},
                           Xcols::Vector{Symbol}, ycols::Vector{Symbol})
     keycoltypes = getUnwrappedColumnElTypes(gdf.parent, keycols)
     Xdict = Dict{Tuple{keycoltypes...},Matrix{T}}()
@@ -297,13 +297,13 @@ function getMatrixDict{T}(::Type{T}, gdf::GroupedDataTable, keycols::Vector{Symb
     Xdict, ydict
 end
 
-function getMatrixDict{T}(::Type{T}, df::DataTable, keycols::Vector{Symbol},
+function getMatrixDict{T}(::Type{T}, df::DataFrame, keycols::Vector{Symbol},
                           datacols::Vector{Symbol})
     getMatrixDict(T, groupby(df, keycols), keycols, datacols)
 end
 
 # this version is used by grouped dataframe
-function getMatrixDict{T}(::Type{T}, df::DataTable, keycols::Vector{Symbol},
+function getMatrixDict{T}(::Type{T}, df::DataFrame, keycols::Vector{Symbol},
                           Xcols::Vector{Symbol}, ycols::Vector{Symbol})
     getMatrixDict(T, groupby(df, keycols), keycols, Xcols, ycols)
 end
@@ -318,10 +318,10 @@ Convert an array of Julia objects to a datatable
     struct_to_table(s)
     struct_to_table(v)
 
-Converts a Julia compound type s into a single row of a `DataTable` with column names
+Converts a Julia compound type s into a single row of a `DataFrame` with column names
 equal to field names and row values equal to field values.
 
-Alternatively, once could pass a vector of compound type instances to create a `DataTable`
+Alternatively, once could pass a vector of compound type instances to create a `DataFrame`
 with each row corresponding to an instance of the type.
 """
 function struct_to_table{T}(t::T)
@@ -330,7 +330,7 @@ function struct_to_table{T}(t::T)
     for i ∈ 1:length(fnames)
         dat[i] = [getfield(t, fnames[i])]
     end
-    DataTable(dat, fnames)
+    DataFrame(dat, fnames)
 end
 
 function struct_to_table{T}(v::AbstractVector{T})
@@ -342,7 +342,7 @@ function struct_to_table{T}(v::AbstractVector{T})
         dat[j][i] = getfield(v[i], fnames[j])
     end
 
-    DataTable(dat, fnames)
+    DataFrame(dat, fnames)
 end
 export struct_to_table
 
@@ -352,7 +352,7 @@ export struct_to_table
 
 Create a dictionary out of the specified columns of a dataframe.
 """
-function Dict(df::DataTable, keycol::Symbol, valcol::Symbol)::Dict
+function Dict(df::DataFrame, keycol::Symbol, valcol::Symbol)::Dict
     Dict(df[keycol], df[valcol])
 end
 export Dict

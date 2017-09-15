@@ -24,7 +24,7 @@ function _dispatchConstrainFunc!(f::Function, mask::Union{Vector{Bool},BitArray}
     get_args(i) = (get_idx(i, j) for j ∈ 1:ncols)
     # all arg cols are same length
     for i ∈ 1:length(keep)
-        if !mask[i] 
+        if !mask[i]
             keep[i] = false
         else
             # this is inexplicably slow
@@ -40,14 +40,14 @@ end
     constrain(df, kwargs...)
     constrain(df, cols, func)
 
-Returns a subset of the dataframe `df` for which the column `key` satisfies 
-`value(df[i, key]) == true`.  Where `(key, value)` are the pairs in `dict`.  
+Returns a subset of the dataframe `df` for which the column `key` satisfies
+`value(df[i, key]) == true`.  Where `(key, value)` are the pairs in `dict`.
 Alternatively one can use keyword arguments instead of a `Dict`.
 
 Also, one can pass a function the arguments of which are elements of columns specified
 by `cols`.
 """
-function constrain{K<:Symbol, V<:Function}(df::AbstractDataTable, constraints::Dict{K, V})::DataTable
+function constrain{K<:Symbol, V<:Function}(df::AbstractDataFrame, constraints::Dict{K, V})::DataFrame
     keep = ones(Bool, size(df, 1))
     for (col, bfunc) ∈ constraints
         _colconstraints!(df[col], bfunc, keep)
@@ -55,14 +55,14 @@ function constrain{K<:Symbol, V<:Function}(df::AbstractDataTable, constraints::D
     df[keep, :]
 end
 
-function constrain{K, V<:Array}(df::AbstractDataTable, constraints::Dict{K, V})::DataTable
+function constrain{K, V<:Array}(df::AbstractDataFrame, constraints::Dict{K, V})::DataFrame
     newdict = Dict(k=>(x -> x ∈ v) for (k, v) ∈ constraints)
     constrain(df, newdict)
 end
 
-constrain(df::AbstractDataTable; kwargs...) = constrain(df, Dict(kwargs))
+constrain(df::AbstractDataFrame; kwargs...) = constrain(df, Dict(kwargs))
 
-function constrain(df::AbstractDataTable, cols::Vector{Symbol}, f::Function)
+function constrain(df::AbstractDataFrame, cols::Vector{Symbol}, f::Function)
     keep = BitArray(size(df, 1))
     _dispatchConstrainFunc!(f, completecases(df[cols]), keep, (df[col] for col ∈ cols)...)
     df[keep, :]
@@ -77,12 +77,12 @@ function _checkConstraintExpr!(expr::Expr, dict::Dict)
     for (idx, arg) ∈ enumerate(expr.args)
         if isa(arg, QuoteNode)
             newsym = gensym()
-            dict[Meta.quot(arg.value)] = newsym  
+            dict[Meta.quot(arg.value)] = newsym
             expr.args[idx] = newsym
         elseif  isa(arg, Expr) && arg.head == :quote
             newsym = gensym()
             dict[Meta.quot(arg.args[1])] = newsym
-            expr.args[idx] = newsym 
+            expr.args[idx] = newsym
         elseif isa(arg, Expr)
             _checkConstraintExpr!(expr.args[idx], dict)
         end
@@ -105,7 +105,7 @@ macro constrain(df, expr)
     cols_expr = Expr(:vect, cols...)
     fun_name = gensym()
     o = quote
-        function $fun_name($(vars...)) 
+        function $fun_name($(vars...))
             $expr
         end
         constrain($df, $cols_expr, $fun_name)

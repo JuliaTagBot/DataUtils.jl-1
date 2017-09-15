@@ -3,10 +3,9 @@ __precompile__(true)
 module DataUtils
 
 # using Requires
-using DataTables
-import Feather
-import DataFrames
-import DataArrays
+using DataFrames
+using NullableArrays
+# import Feather
 
 import Base.convert
 import Base.serialize
@@ -21,8 +20,8 @@ include("dfutils.jl")
 include("dffilters.jl")
 include("tokenize.jl")
 
-include("dataframes_compat.jl")
-include("featherwrap.jl")
+# include("dataframes_compat.jl")
+# include("featherwrap.jl")
 
 
 end # module DataUtils

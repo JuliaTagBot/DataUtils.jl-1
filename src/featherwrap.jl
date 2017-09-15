@@ -10,7 +10,7 @@ end
 
 
 # TODO this  is a temporary fix for a bug in Feather
-function _nullStringsFix!(data::DataTable)
+function _nullStringsFix!(data::DataFrame)
     for (name, dtype) ∈ zip(names(data), eltype.(eltypes(data)))
         if dtype <: AbstractString
             _nullStringsFix!(data[name])
@@ -35,13 +35,13 @@ function featherWrite(filename::AbstractString, df::DataFrames.DataFrame;
         if !overwrite
             error("File already exists.  Use overwrite=true.")
         end
-        rm(filename)     
+        rm(filename)
     end
     Feather.write(filename, df)
     nothing
 end
 
-function featherWrite(filename::AbstractString, dt::DataTable;
+function featherWrite(filename::AbstractString, dt::DataFrame;
                       overwrite::Bool=false)::Void
     dt = copyColumns(dt)
     _nullStringsFix!(dt)  # TODO this is for fixing a bug in Feather, remove when fixed
@@ -62,8 +62,8 @@ performance.
 
 Note that this will no longer be necessary in Julia 0.6.
 """
-function convertWeakRefStrings(df::AbstractDataTable)
-    odf = DataTable()
+function convertWeakRefStrings(df::AbstractDataFrame)
+    odf = DataFrame()
     for col ∈ names(df)
         if eltype(df[col]) <: Nullable{Feather.WeakRefString{UInt8}}
             odf[col] = convert(NullableVector{String}, df[col])
@@ -74,7 +74,7 @@ function convertWeakRefStrings(df::AbstractDataTable)
     odf
 end
 export convertWeakRefStrings
-function convertWeakRefStrings!(df::AbstractDataTable)
+function convertWeakRefStrings!(df::AbstractDataFrame)
     for col ∈ names(df)
         if eltype(df[col]) <: Nullable{Feather.WeakRefString{UInt8}}
             df[col] = convert(NullableVector{String}, df[col])
@@ -93,9 +93,9 @@ A wrapper for reading dataframes which are saved in feather files.  The purpose 
 wrapper is primarily for converting `WeakRefString` to `String`.  This will no longer
 be necessary in Julia 0.6.
 """
-function featherRead(filename::AbstractString; convert_strings::Bool=true)::DataTable
-    df = convert(DataTable, Feather.read(filename))
-    # df = convert(DataTable, Feather.read(filename))
+function featherRead(filename::AbstractString; convert_strings::Bool=true)::DataFrame
+    df = convert(DataFrame, Feather.read(filename))  # this shouldn't be needed now
+    # df = convert(DataFrame, Feather.read(filename))
     if convert_strings
         convertWeakRefStrings!(df)
     end
