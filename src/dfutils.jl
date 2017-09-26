@@ -1,21 +1,6 @@
 
 
 """
-convert(NullableArray{T<:Integer,N}, a)
-
-This converts a column of floats that should have been ints, but got converted to
-floats because it has missing values which were converted to NaN's.
-The supplied `NullableArray` should have eltype `Float32` or `Float64`.
-"""
-function convert{T<:Integer,N,K<:AbstractFloat}(::Type{NullableArray{T,N}},
-                                                a::NullableArray{K})
-    NullableArray([isnan(x) ? Nullable() : convert(dtype, x) for x in a])
-end
-export convert
-
-
-
-"""
     shuffle!(df::DataFrame)
 
 Shuffles a dataframe in place.
@@ -34,40 +19,13 @@ export shuffle!
 """
     convertNulls!{T}(A::Array{T, 1}, newvalue::T)
 
-Converts all null values (NaN's and Nullable()) to a particular value.
-Note this has to check whether the type is Nullable.
+Converts all null values to a particular value.
 """
-function convertNulls!{T <: AbstractFloat}(A::Vector{T}, newvalue::T)
-    for i in 1:length(A)
-        if isnan(A[i])
-            A[i] = newvalue
-        end
-    end
-    return A
+function convertNulls!(A::Vector{T}, newvalue::T) where T<:AbstractFloat
+    A[isnan.(A) .| isnull(A)] .= newvalue 
+    A
 end
-
-function convertNulls!{T <: Nullable}(A::Vector{T}, newvalue::T)
-    for i in 1:length(A)
-        if isnull(A[i])
-            A[i] = newvalue
-        end
-    end
-    return A
-end
-
 export convertNulls!
-
-
-"""
-    convertNulls{T}(A, newvalue)
-
-Converts all null vlaues (NaN's and Nullable()) to a particular value.
-This is a wrapper added for sake of naming consistency.
-"""
-function convertNulls{T}(A::NullableArray{T}, newvalue::T)
-    convert(Array, A, newvalue)
-end
-export convertNulls
 
 
 """
@@ -156,7 +114,7 @@ Creates a random dataframe with columns of types specified by `dtypes`.  This is
 for testing various dataframe related functionality.
 """
 function randomData(dtypes::DataType...; nrows::Integer=10^4,
-                      names::Vector{Symbol}=Symbol[])::DataFrame
+                    names::Vector{Symbol}=Symbol[])::DataFrame
     df = DataFrame()
     for (idx, dtype) in enumerate(dtypes)
         col = Symbol(string("col_", idx))
@@ -178,7 +136,7 @@ end
 export randomData
 
 
-nans2nulls!(X::NullableArray) = (X[find(isnan(X))] .= Nullable(); X)
+nans2nulls!(X::Array{Union{T,Null}}) where T = (X[find(isnan(X))] .= null; X)
 nans2nulls!(data::DataFrame, col::Symbol) = nans2nulls!(data[col])
 
 
@@ -186,12 +144,9 @@ nans2nulls!(data::DataFrame, col::Symbol) = nans2nulls!(data[col])
     nans2nulls(col)
     nans2nulls(df, colname)
 
-Converts all `NaN`s appearing in the column to `Nullable()`.  The return
-type is `NullableArray`, even if the original type of the column is not.
+Converts all `NaN`s appearing in the column to `null`.
 """
-nans2nulls(col::NullableArray) = nans2nulls!(copy(col))
-
-nans2nulls(col::AbstractVector) = nans2nulls!(convert(NullableArray, col))
+nans2nulls(col::AbstractVector{T}) where T = nans2nulls!(convert(Array{Union{T,Null}}, col))
 
 nans2nulls(df::DataFrame, col::Symbol) = nans2nulls(df[col])
 export nans2nulls
@@ -201,56 +156,39 @@ export nans2nulls
     getCategoryVector(A, vals[, dtype])
 
 Get a vector which is 1 for each `a ∈ A` that satisfies `a ∈ vals`, and 0 otherwise.
-If `A` is a `NullableVector`, any null elements will be mapped to 0.
+Any nulls will be mapped to 0.
 
 Optionally, one can specify the datatype of the output vector.
 """
-function getCategoryVector{T, U}(A::Vector{T}, vals::Vector{T}, ::Type{U}=Int64)
+function getCategoryVector(A::Vector{T}, vals::Vector{T}, ::Type{U}=Int64) where {T,U}
     # this is for efficiency
     valsdict = Dict{T, Void}(v=>nothing for v ∈ vals)
     Vector{U}([a ∈ keys(valsdict) for a ∈ A])
 end
 
-function getCategoryVector{T, U}(A::NullableVector{T}, vals::Vector{T}, ::Type{U}=Int64)
+function getCategoryVector(A::Vector{Union{T,Null}}, vals::Vector{T}, ::Type{U}=Int64) where {T,U}
     # this is for efficiency
     valsdict = Dict{T, Void}(v=>nothing for v ∈ vals)
     o = map(a -> a ∈ keys(valsdict), A)
-    # these nested converts are the result of incomplete NullableArrays interface
     convert(Array{U}, convert(Array, o, 0))
 end
 
-function getCategoryVector{T, U}(A::Vector{T}, val::T, ::Type{U}=Int64)
+function getCategoryVector(A::Vector{T}, val::T, ::Type{U}=Int64) where {T,U}
     getCategoryVector(A, [val], U)
 end
 
-function getCategoryVector{T, U}(A::NullableVector{T}, val::T, ::Type{U}=Int64)
+function getCategoryVector(A::Vector{Union{T,Null}}, val::T, ::Type{U}=Int64) where {T,U}
     getCategoryVector(A, [val], U)
 end
 
-function getCategoryVector{U}(df::AbstractDataFrame, col::Symbol, vals::Vector, ::Type{U}=Int64)
+function getCategoryVector(df::AbstractDataFrame, col::Symbol, vals::Vector, ::Type{U}=Int64) where U
     getCategoryVector(df[col], vals, U)
 end
 
-function getCategoryVector{U}(df::AbstractDataFrame, col::Symbol, val, ::Type{U}=Int64)
+function getCategoryVector(df::AbstractDataFrame, col::Symbol, val, ::Type{U}=Int64) where U
     getCategoryVector(df[col], [val], U)
 end
 export getCategoryVector
-
-
-"""
-    getUnwrappedColumnElTypes(df[, cols=[]])
-
-Get the element types of columns in a dataframe.  If the element types are `Nullable`,
-instead give the `eltype` of the `Nullable`.  If `cols=[]` this will be done for
-all columns in the dataframe.
-"""
-function getUnwrappedColumnElTypes(df::DataFrame, cols::Vector{Symbol}=Symbol[])
-    if length(cols) == 0
-        cols = names(df)
-    end
-    [et <: Nullable ? eltype(et) : et for et ∈ eltypes(df[cols])]
-end
-export getUnwrappedColumnElTypes
 
 
 """
@@ -273,8 +211,8 @@ function getMatrixDict(df::DataFrame, keycols::Vector{Symbol}, datacols::Vector{
     dict
 end
 
-function getMatrixDict{T}(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symbol},
-                          datacols::Vector{Symbol})
+function getMatrixDict(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symbol},
+                       datacols::Vector{Symbol}) where  T
     keycoltypes = getUnwrappedColumnElTypes(gdf.parent, keycols)
     dict = Dict{Tuple{keycoltypes...},Matrix{T}}()
     for sdf ∈ gdf
@@ -284,8 +222,8 @@ function getMatrixDict{T}(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symb
     dict
 end
 
-function getMatrixDict{T}(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symbol},
-                          Xcols::Vector{Symbol}, ycols::Vector{Symbol})
+function getMatrixDict(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symbol},
+                       Xcols::Vector{Symbol}, ycols::Vector{Symbol}) where T
     keycoltypes = getUnwrappedColumnElTypes(gdf.parent, keycols)
     Xdict = Dict{Tuple{keycoltypes...},Matrix{T}}()
     ydict = Dict{Tuple{keycoltypes...},Matrix{T}}()
@@ -297,14 +235,14 @@ function getMatrixDict{T}(::Type{T}, gdf::GroupedDataFrame, keycols::Vector{Symb
     Xdict, ydict
 end
 
-function getMatrixDict{T}(::Type{T}, df::DataFrame, keycols::Vector{Symbol},
-                          datacols::Vector{Symbol})
+function getMatrixDict(::Type{T}, df::DataFrame, keycols::Vector{Symbol},
+                       datacols::Vector{Symbol}) where T
     getMatrixDict(T, groupby(df, keycols), keycols, datacols)
 end
 
 # this version is used by grouped dataframe
-function getMatrixDict{T}(::Type{T}, df::DataFrame, keycols::Vector{Symbol},
-                          Xcols::Vector{Symbol}, ycols::Vector{Symbol})
+function getMatrixDict(::Type{T}, df::DataFrame, keycols::Vector{Symbol},
+                       Xcols::Vector{Symbol}, ycols::Vector{Symbol}) where T
     getMatrixDict(T, groupby(df, keycols), keycols, Xcols, ycols)
 end
 
@@ -324,7 +262,7 @@ equal to field names and row values equal to field values.
 Alternatively, once could pass a vector of compound type instances to create a `DataFrame`
 with each row corresponding to an instance of the type.
 """
-function struct_to_table{T}(t::T)
+function struct_to_table(t::T) where T
     fnames = fieldnames(T)
     dat = Vector{Any}(length(fnames))
     for i ∈ 1:length(fnames)
@@ -333,7 +271,7 @@ function struct_to_table{T}(t::T)
     DataFrame(dat, fnames)
 end
 
-function struct_to_table{T}(v::AbstractVector{T})
+function struct_to_table(v::AbstractVector{T}) where T
     fnames = fieldnames(T)
     dtypes = (fieldtype(T, n) for n ∈ fnames)
     dat = Any[Vector{dtype}(length(v)) for dtype ∈ dtypes]

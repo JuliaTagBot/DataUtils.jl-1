@@ -7,7 +7,7 @@
 
 One can provide `Dict` with (equal length) vector arguments.  The first
 vector provides a list of keys, while the second provides a list of values.
-If the vectors are `NullableVector`, only key, value pairs with *both* their
+If the vectors constain nulls, only key, value pairs with *both* their
 elements non-null will be added.
 """
 function Dict{K, V}(keys::Vector{K}, values::Vector{V})::Dict
@@ -16,7 +16,7 @@ function Dict{K, V}(keys::Vector{K}, values::Vector{V})::Dict
     Dict(k=>v for (k, v) ∈ zip(keys, values))
 end
 
-function Dict{K, V}(keys::NullableVector{K}, values::NullableVector{V})::Dict
+function Dict(keys::Vector{Union{K,Null}}, values::Vector{Union{V,Null}})::Dict where {K,V}
     @assert length(keys) == length(values) ("Vectors for constructing
                                              Dict must be of equal length.")
     dict = Dict{K, V}()
@@ -87,13 +87,6 @@ function getNormedHistogramData{T <: Real}(X::Vector{T};
     width = midpoints[2] - midpoints[1]
     weights = h.weights./(sum(h.weights)*width)
     midpoints, weights
-end
-
-# NullableArrays version, just ignores nulls
-function getNormedHistogramData{T <: Real}(X::NullableArray{T, 1};
-                                           nbins::Integer=StatsBase.sturges(length(X)))
-    X = dropnull(X)
-    getNormedHistogramData(X, nbins=nbins)
 end
 export getNormedHistogramData
 

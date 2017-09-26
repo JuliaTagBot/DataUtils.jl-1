@@ -19,6 +19,5 @@ function discreteDiff{T}(X::Array{T, 1})
     end
     return o
 end
-discreteDiff{T}(X::NullableArray{T, 1}) = discreteDiff(convert(Array, X))
 export discreteDiff
 

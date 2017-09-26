@@ -1,7 +1,7 @@
 
 
 # helper function for constrain
-function _colconstraints!{T}(col::NullableVector{T}, bfunc::Function, keep::Vector{Bool})
+function _colconstraints!(col::Vector{Union{T,Null}}, bfunc::Function, keep::Vector{Bool}) where T
     for i ∈ 1:length(keep)
         if !isnull(col[i])
             keep[i] &= bfunc(get(col[i]))
@@ -16,7 +16,7 @@ end
 # this is for fixing slowness due to bad dispatching
 # performance is better, but it's still slow
 function _dispatchConstrainFunc!(f::Function, mask::Union{Vector{Bool},BitArray},
-                                 keep::BitArray, cols::NullableVector...)
+                                 keep::BitArray, cols::Vector{Union{T,Null}}...) where T
     ncols = length(cols)
     # for some reason this completely fixes the performance issues
     # still don't completely understand why
@@ -47,7 +47,8 @@ Alternatively one can use keyword arguments instead of a `Dict`.
 Also, one can pass a function the arguments of which are elements of columns specified
 by `cols`.
 """
-function constrain{K<:Symbol, V<:Function}(df::AbstractDataFrame, constraints::Dict{K, V})::DataFrame
+function constrain(df::AbstractDataFrame, 
+                   constraints::Dict{K, V})::DataFrame where {K<:Symbol,V<:Function}
     keep = ones(Bool, size(df, 1))
     for (col, bfunc) ∈ constraints
         _colconstraints!(df[col], bfunc, keep)
