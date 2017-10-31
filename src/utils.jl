@@ -366,3 +366,36 @@ Inverts a dictionary or other `Associative`.  Output is always `Dict`.
 """
 invert(dict::Associative) = Dict(v=>k for (k,v) ∈ dict)
 
+
+# helper function for freqdict
+function _check_insert(dict::Dict, a)
+    if a ∈ keys(dict)
+        dict[a] += 1
+    else
+        dict[a] = 1
+    end
+end
+function _check_insert(dict::Dict, ::Null)
+    if any(isnull(d) for d ∈ keys(dict))
+        dict[null] += 1
+    else
+        dict[null] = 1
+    end
+end
+
+
+"""
+    freqdict(A::AbstractVector)
+
+Returns a `Dict` the keys of which are the distinct elements of `A` and the
+values of which are the number of times that value occurs in `A`.
+"""
+function freqdict(A::AbstractVector{T}) where T
+    dict = Dict{T,Int}()
+    for a ∈ A
+        _check_insert(dict, a)
+    end
+    dict
+end
+export freqdict
+
