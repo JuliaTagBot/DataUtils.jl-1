@@ -386,9 +386,14 @@ end
 
 """
     freqdict(A::AbstractVector)
+    freqdict(A::AbstractVector...)
 
 Returns a `Dict` the keys of which are the distinct elements of `A` and the
 values of which are the number of times that value occurs in `A`.
+
+If multiple vectors are passed, a `Dict` will be created where the keys are
+tuples containing a combination of elements from the vectors that were passed,
+with values equal to the number of times that each combination occurred.
 """
 function freqdict(A::AbstractVector{T}) where T
     dict = Dict{T,Int}()
@@ -397,5 +402,15 @@ function freqdict(A::AbstractVector{T}) where T
     end
     dict
 end
+function freqdict(As, dtypes)
+    dict = Dict{Tuple{dtypes...},Int}()
+    for i ∈ 1:length(As[1])
+        _check_insert(dict, tuple((a[i] for a ∈ As)...))
+    end
+    dict
+end
+freqdict(As::AbstractVector...) = freqdict(As, eltype.(As))
 export freqdict
+
+
 
