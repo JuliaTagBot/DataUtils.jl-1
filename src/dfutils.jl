@@ -296,3 +296,12 @@ end
 export Dict
 
 
+"""
+    datasize(df)
+
+Returns the total size of data stored by a dataframe in megabytes.
+"""
+datasize(df::DataFrame)::Float64 = sum(sizeof.(df.columns))/10^6
+export datasize
+
+
